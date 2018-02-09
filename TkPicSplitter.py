@@ -9,7 +9,10 @@ root = TkinterDnD.Tk()
 #textRows.set("1")
 
 selectedImageIndex = -1
+backImageIndex = tk.IntVar()
+backImageIndex.set(-1)
 lblImage = None
+bigPhotoImage = None
 
 def IsolateName(s):
     l = s.split('.')
@@ -27,13 +30,11 @@ class ImageFile(object):
         self.image = Image.open(fileName)
         self.fileName = fileName
         self.isolateFileName = IsolateName(self.fileName)
-        self.checkValue = tk.IntVar()
         self.order = 0
 
         self.label = None
         self.photoImage = None
         self.frame = None
-        self.checkbutton = None
         self.bigImage = None
 
         self.offsetX = 0
@@ -48,10 +49,6 @@ class FusionImage(object):
 images = []
 
 def ShowImages():
-    def _OnCheckbutton(i):
-        def func():
-            return OnCheckbutton(i)
-        return func
     def _OnImageClick(i):
         def func(evt):
             return OnImageClick(evt, i)
@@ -63,16 +60,15 @@ def ShowImages():
 
         frame = tk.Frame(root)
         lbl = tk.Label(frame, image=img)
-        checkbutton = tk.Checkbutton(frame, variable=imageFile.checkValue, command=_OnCheckbutton(i))
         lbl.pack()
-        checkbutton.pack()
+        radio = tk.Radiobutton(frame, variable=backImageIndex, value=i)
+        radio.pack()
 
         lbl.bind("<Button-1>", _OnImageClick(i))
 
         imageFile.label = lbl
         imageFile.photoImage = img
         imageFile.frame = frame
-        imageFile.checkbutton = checkbutton
         frame.pack(side=tk.LEFT)
 
 def OnImageClick(event, index):
@@ -103,20 +99,34 @@ def OnFileDrop(event):
     ShowImages()
 
 
-def OnCheckbutton(index):
-    print("OnCheckbutton", index)
-
 def MoveImage(ox, oy):
+    global bigPhotoImage
+    print("MoveImage", backImageIndex.get())
     if selectedImageIndex == -1:
         return
+
+    if backImageIndex.get() != -1:
+        backFile = images[backImageIndex.get()]
+        if backFile.bigImage == None:
+            backFile.bigImage = Image.open(backFile.fileName)
+        back = backFile.bigImage
+
     imageFile = images[selectedImageIndex]
     imageFile.offsetX += ox
     imageFile.offsetY += oy
-    temp = Image.open(imageFile.fileName)
+    if imageFile.bigImage == None:
+        imageFile.bigImage = Image.open(imageFile.fileName)
+    temp = imageFile.bigImage
     temp = ImageChops.offset(temp, imageFile.offsetX, imageFile.offsetY)
+
+    if back != None:
+        temp = ImageChops.blend(temp, back, 0.5)
+
     img = ImageTk.PhotoImage(temp)
-    imageFile.bigImage = img
+    bigPhotoImage = img
+
     lblImage.config(image = img)
+
     return
 
 def Start():
