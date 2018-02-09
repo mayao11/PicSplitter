@@ -8,6 +8,9 @@ root = TkinterDnD.Tk()
 #textRows = tk.StringVar()
 #textRows.set("1")
 
+selectedImageIndex = -1
+lblImage = None
+
 def IsolateName(s):
     l = s.split('.')
     name = l[-2]
@@ -31,6 +34,10 @@ class ImageFile(object):
         self.photoImage = None
         self.frame = None
         self.checkbutton = None
+        self.bigImage = None
+
+        self.offsetX = 0
+        self.offsetY = 0
 
 class FusionImage(object):
     def __init__(self):
@@ -68,9 +75,10 @@ def ShowImages():
         imageFile.checkbutton = checkbutton
         frame.pack(side=tk.LEFT)
 
-
 def OnImageClick(event, index):
+    global selectedImageIndex
     print("OnImageClick", event, index)
+    selectedImageIndex = index
 
 
 def ClearImages():
@@ -98,11 +106,25 @@ def OnFileDrop(event):
 def OnCheckbutton(index):
     print("OnCheckbutton", index)
 
+def MoveImage(ox, oy):
+    if selectedImageIndex == -1:
+        return
+    imageFile = images[selectedImageIndex]
+    imageFile.offsetX += ox
+    imageFile.offsetY += oy
+    temp = Image.open(imageFile.fileName)
+    temp = ImageChops.offset(temp, imageFile.offsetX, imageFile.offsetY)
+    img = ImageTk.PhotoImage(temp)
+    imageFile.bigImage = img
+    lblImage.config(image = img)
+    return
 
 def Start():
-    im=Image.open("syokuzi_ie.png")
-    im.thumbnail((250,250))
-    img=ImageTk.PhotoImage(im)
+    global lblImage
+    root.bind("<Up>", lambda evt:MoveImage(0, -1))
+    root.bind("<Down>", lambda evt:MoveImage(0, 1))
+    root.bind("<Left>", lambda evt:MoveImage(-1, 0))
+    root.bind("<Right>", lambda evt:MoveImage(1, 0))
     lblDrag = tk.Label(root, text="将切好的图片拖到这里。（文件名不支持空格）")
     lblDrag.drop_target_register(DND_FILES)
     lblDrag.dnd_bind('<<Drop>>', OnFileDrop)
