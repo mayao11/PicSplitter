@@ -16,6 +16,8 @@ gImageSizeVarY = tk.StringVar()
 gImageSizeEntryX = None
 gImageSizeEntryY = None
 
+gZoomScale = 1.0
+
 
 def isolate_name(s):
     t = s.split('.')
@@ -163,6 +165,8 @@ def move_image(ox, oy):
     if back is not None:
         temp = ImageChops.blend(temp, back, 0.5)
 
+    zoom_size = (temp.size[0]*gZoomScale, temp.size[1]*gZoomScale)
+    temp = temp.resize((int(zoom_size[0]), int(zoom_size[1])))
     img = ImageTk.PhotoImage(temp)
     gBigPhotoImage = img
 
@@ -176,7 +180,7 @@ def expand_image(image):
         return image
     new_image = Image.new(image.mode, global_size())
     cur = image.size
-    new_image.paste(image, ((new_image.size[0]-cur[0])/2, (new_image.size[1]-cur[1])/2))
+    new_image.paste(image, ((new_image.size[0]-cur[0])//2, (new_image.size[1]-cur[1])//2))
     return new_image
 
 
@@ -212,6 +216,22 @@ def on_save_all_click():
             print("覆盖保存了", image_file.fileName)
 
 
+def on_view_zoomin():
+    global gZoomScale
+    gZoomScale = gZoomScale + 0.2
+    if gZoomScale >= 10.0:
+        gZoomScale = 10.0
+    move_image(0, 0)
+
+
+def on_view_zoomout():
+    global gZoomScale
+    gZoomScale = gZoomScale - 0.2
+    if gZoomScale <= 0:
+        gZoomScale = 0.2
+    move_image(0, 0)
+
+
 def start():
     global gLblImage, gImageSizeEntryX, gImageSizeEntryY
     root.bind("<Up>", lambda evt: move_image(0, -1))
@@ -236,6 +256,8 @@ def start():
     gImageSizeEntryY.pack()
 
     tk.Button(root, text='全部保存', command=on_save_all_click).pack()
+    tk.Button(root, text='+', command=on_view_zoomin).pack()
+    tk.Button(root, text='-', command=on_view_zoomout).pack()
 
     gLblImage.pack()
     root.mainloop()
